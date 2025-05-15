@@ -1,36 +1,37 @@
 package handlers
 
 import (
-	"mine/internal/model"
-
-	"github.com/gofiber/fiber/v2"
+    "github.com/gofiber/fiber/v2"
+    "mine/internal/model"
+    "mine/pkg/database"
 )
 
-func GetData(c *fiber.Ctx) error {
-	data, err := model.GetAllData()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
-
-	return c.JSON(data)
+func GetItems(c *fiber.Ctx) error {
+    db := database.GetDB()
+    items, err := models.GetAllItems(db)
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
+    return c.JSON(items)
 }
 
-func CreateData(c *fiber.Ctx) error {
-	var input model.DataInput
-	if err := c.BodyParser(&input); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Неверный формат данных",
-		})
-	}
+func CreateItem(c *fiber.Ctx) error {
+    db := database.GetDB()
+    
+    var item models.Item
+    if err := c.BodyParser(&item); err != nil {
+        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+            "error": "Invalid request body",
+        })
+    }
 
-	result, err := model.CreateData(input)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
-	}
+    if err := models.CreateItem(db, &item); err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+            "error": err.Error(),
+        })
+    }
 
-	return c.JSON(result)
+    return c.Status(fiber.StatusCreated).JSON(item)
 }

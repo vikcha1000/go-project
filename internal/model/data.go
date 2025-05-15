@@ -1,38 +1,37 @@
-package model
+package models
 
-import "time"
+import (
+    "time"
+    "github.com/jmoiron/sqlx"
+)
 
-// DataInput - модель для входящих данных
-type DataInput struct {
-	Name  string `json:"name"`
-	Value int    `json:"value"`
+type Item struct {
+    ID        int       `db:"id" json:"id"`
+    Name      string    `db:"name" json:"name"`
+    Value     int       `db:"value" json:"value"`
+    CreatedAt time.Time `db:"created_at" json:"created_at"`
 }
 
-// DataOutput - модель для исходящих данных
-type DataOutput struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	Value     int       `json:"value"`
-	CreatedAt time.Time `json:"created_at"`
+func CreateTable(db *sqlx.DB) error {
+    query := `
+    CREATE TABLE IF NOT EXISTS items (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        value INTEGER NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )`
+    _, err := db.Exec(query)
+    return err
 }
 
-// GetAllData - получает все данные (заглушка)
-func GetAllData() ([]DataOutput, error) {
-	// Здесь должна быть логика получения данных из БД
-	// Сейчас это заглушка
-	return []DataOutput{
-		{ID: 1, Name: "Тест", Value: 100, CreatedAt: time.Now()},
-	}, nil
+func CreateItem(db *sqlx.DB, item *Item) error {
+    query := `INSERT INTO items (name, value) VALUES ($1, $2) RETURNING id, created_at`
+    return db.QueryRowx(query, item.Name, item.Value).StructScan(item)
 }
 
-// CreateData - создает новые данные (заглушка)
-func CreateData(input DataInput) (*DataOutput, error) {
-	// Здесь должна быть логика сохранения в БД
-	// Сейчас это заглушка
-	return &DataOutput{
-		ID:        2,
-		Name:      input.Name,
-		Value:     input.Value,
-		CreatedAt: time.Now(),
-	}, nil
+func GetAllItems(db *sqlx.DB) ([]Item, error) {
+    var items []Item
+    query := `SELECT id, name, value, created_at FROM items ORDER BY created_at DESC`
+    err := db.Select(&items, query)
+    return items, err
 }
