@@ -18,8 +18,11 @@ func Run() error {
 	// Инициализируем обработчики с подключением к БД
 	taskHandler := handlers.NewTaskHandler(database.DB)
 
+		// Инициализируем обработчики с подключением к БД
+	userHandler := handlers.NewUserHandler(database.DB)
+
 	// Настраиваем маршруты
-	SetupRoutes(app, taskHandler)
+	SetupRoutes(app, taskHandler, userHandler)
 
 	return app.Listen(":3000")
 }
