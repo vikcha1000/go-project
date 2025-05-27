@@ -1,13 +1,20 @@
 package app
 
 import (
-    "github.com/gofiber/fiber/v2"
-    "mine/internal/handlers"
+	"mine/internal/handlers"
+
+	"github.com/gofiber/fiber/v2"
 )
 
-func setupRoutes(app *fiber.App) {
-    api := app.Group("/api")
-    items := api.Group("/items")
-    items.Get("/", handlers.GetItems)
-    items.Post("/", handlers.CreateItem)
+func SetupRoutes(app *fiber.App, taskHandler *handlers.TaskHandler) {
+	api := app.Group("/api")
+	task := api.Group("/task")
+	task.Post("/", taskHandler.CreateTask)
+	task.Get("/:id", taskHandler.GetTaskByID)
+
+	// user := api.Group("/user")
+	// user.Post("/", handlers.CreateUser)
+	// user.Get("/:id", handlers.GetUserByID)
+	// user.Put("/:id", handlers.UpdateUserByID)
+	// //user.Delete("/:id", handlers.DeleteUserByID)
 }
