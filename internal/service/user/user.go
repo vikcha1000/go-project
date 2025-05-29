@@ -1,4 +1,4 @@
-package handlers
+package user
 
 import (
 	"mine/internal/model"
@@ -15,10 +15,9 @@ func NewUserHandler(db *gorm.DB) *UserHandler {
 	return &UserHandler{DB: db}
 }
 
-
 // GetUserByID возвращает Юзера по ID
 func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
-    id := c.Params("id")
+	id := c.Params("id")
 
 	var user model.User
 	result := h.DB.First(&user, id)

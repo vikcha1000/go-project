@@ -36,5 +36,6 @@ func getEnv(key, defaultValue string) string {
 	if !exists {
 		return defaultValue
 	}
+	
 	return value
 }
