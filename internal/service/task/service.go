@@ -48,11 +48,11 @@ func (s *TaskService) GetTaskByID(ctx context.Context, id uint) (*model.Task, er
 }
 
 //Валидация на существование связанного юзера: Автора и Исполнителя
-func (s *TaskService) ValidateUsersExist(ctx context.Context, authorID, executorID uint) error {
-	if err := s.db.WithContext(ctx).First(&model.User{}, authorID).Error; err != nil {
+func (s *TaskService) ValidateUsersExist(ctx context.Context, userID uint) error {
+	if err := s.db.WithContext(ctx).First(&model.User{}, userID).Error; err != nil {
 		return err
 	}
-	if err := s.db.WithContext(ctx).First(&model.User{}, executorID).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&model.User{}, userID).Error; err != nil {
 		return err
 	}
 	return nil
