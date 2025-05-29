@@ -26,6 +26,7 @@ func (h *TaskHandler) SetupAPI(r fiber.Router) {
 	group.Get("/:id", h.GetTaskByID)
 }
 
+//CreateTask создает и возвращает задачу
 func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 	var req CreateTaskRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -54,6 +55,7 @@ func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(ToTaskResponse(*task))
 }
 
+//GetTaskByID возвращает задачу по id
 func (h *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
 	if err != nil {

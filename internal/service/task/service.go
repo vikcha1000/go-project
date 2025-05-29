@@ -38,6 +38,7 @@ func (s *TaskService) CreateTask(ctx context.Context, req CreateTaskRequest) (*m
 	return &task, nil
 }
 
+//Получение задачи по id
 func (s *TaskService) GetTaskByID(ctx context.Context, id uint) (*model.Task, error) {
 	var task model.Task
 	if err := s.db.WithContext(ctx).Preload("Author").Preload("Executor").First(&task, id).Error; err != nil {
@@ -46,6 +47,7 @@ func (s *TaskService) GetTaskByID(ctx context.Context, id uint) (*model.Task, er
 	return &task, nil
 }
 
+//Валидация на существование связанного юзера: Автора и Исполнителя
 func (s *TaskService) ValidateUsersExist(ctx context.Context, authorID, executorID uint) error {
 	if err := s.db.WithContext(ctx).First(&model.User{}, authorID).Error; err != nil {
 		return err
