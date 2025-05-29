@@ -2,35 +2,36 @@ package user
 
 import (
 	"mine/internal/model"
-
-	"github.com/gofiber/fiber/v2"
+	"context"
 	"gorm.io/gorm"
 )
 
-type UserHandler struct {
+type UserService struct {
 	db *gorm.DB
 }
 
-func NewUserHandler(db *gorm.DB) *UserHandler {
-	return &UserHandler{db: db}
+func NewUserService(db *gorm.DB) *UserService {
+	return &UserService{db: db}
 }
 
-// GetUserByID возвращает Юзера по ID
-func (s *UserHandler) GetUserByID(c *fiber.Ctx) error {
-	id := c.Params("id")
-
-	var user model.User
-	result := s.db.First(&user, id)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "User not found",
-			})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to get user",
-		})
+// createUser создает нового Юзера
+func (s *UserService) CreateUser(ctx context.Context, req CreateUserRequest) (*model.User, error) {
+	user := model.User{
+		Name:        req.Name,
+		TelegramUsername: req.TelegramUsername,
 	}
 
-	return c.JSON(user)
+	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (s *UserService) GetUserByID(ctx context.Context, id uint) (*model.User, error) {
+	var user model.User
+    if err := s.db.WithContext(ctx).First(&user, id).Error; err != nil {
+        return nil, err
+    }
+	return &user, nil
 }

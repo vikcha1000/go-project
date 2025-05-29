@@ -27,10 +27,10 @@ func Run() error {
 		logger.Fatal("Failed to initialize database", zap.Error(err))
 		return err
 	}
-	db := database.DB
 
 	// 3. Инициализация сервисов
 	taskService := task.NewTaskService(database.GetDB())
+    userService := user.NewUserService(database.GetDB())
 
 	// 4. Создание Fiber приложения
 	app := fiber.New()
@@ -41,7 +41,7 @@ func Run() error {
 	// 5. Инициализация обработчиков
 	handlers := []FeatureHandler{
 		task.NewTaskHandler(taskService, logger),
-		user.NewUserHandler(db),
+		user.NewUserHandler(userService, logger),
 	}
 
 	// 6. Настройка маршрутов
