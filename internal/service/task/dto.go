@@ -10,15 +10,15 @@ import (
 type CreateTaskRequest struct {
 	Name        string    `json:"name" validate:"required,min=3"`
 	Description string    `json:"description" validate:"max=500"`
-	AuthorID    uint      `json:"author_id" validate:"required"`
-	ExecutorID  uint      `json:"executor_id" validate:"required"`
+	AuthorID    uint      `json:"authorId" validate:"required"`
+	ExecutorID  uint      `json:"executorId" validate:"required"`
 	Deadline    time.Time `json:"deadline" validate:"required"`
 }
 
 type UpdateTaskRequest struct {
 	Name        *string    `json:"name,omitempty" validate:"omitempty,min=3"`
 	Description *string    `json:"description,omitempty" validate:"omitempty,max=500"`
-	IsDone      *bool      `json:"is_done,omitempty"`
+	IsDone      *bool      `json:"isDone,omitempty"`
 	Deadline    *time.Time `json:"deadline,omitempty"`
 }
 
@@ -31,14 +31,14 @@ type TaskResponse struct {
 	Author      TaskUserResponse `json:"author"`
 	Executor    TaskUserResponse `json:"executor"`
 	Deadline    time.Time        `json:"deadline"`
-	CreatedAt   time.Time        `json:"created_at"`
-	IsDone      bool             `json:"is_done"`
+	CreatedAt   time.Time        `json:"createdAt"`
+	IsDone      bool             `json:"isDone"`
 }
 
 type TaskUserResponse struct {
 	ID               uint   `json:"id" validate:"required"`
 	Name             string `json:"name" validate:"required"`
-	TelegramUsername string `json:"telegram_username" validate:"required"`
+	TelegramUsername string `json:"telegramUsername" validate:"required"`
 }
 
 // --- Helpers ---
