@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"mine/internal/model"
-
+"fmt"
 	"gorm.io/gorm"
 )
 
@@ -72,4 +72,47 @@ func (s *UserService) UpdateUserByID(ctx context.Context, id uint, req UpdateUse
 	}
 
 	return &user, nil
+}
+
+// Удаляет Юзера, если он не создал задачи или не назначен исполнителем
+func (s *UserService) DeleteUserByID(ctx context.Context, id uint) error {
+ // Проверяем наличие связанных задач
+    var taskCountAuthor, taskCountExecutor int64
+    if err := s.db.WithContext(ctx).
+        Model(&model.Task{}).
+        Where("author_id = ?", id).
+        Count(&taskCountAuthor).Error; err != nil {
+        return fmt.Errorf("failed to check tasks: %w", err)
+    }
+
+    if taskCountAuthor > 0 {
+        return errors.New("User has associated tasks: Author")
+    }
+
+        if err := s.db.WithContext(ctx).
+        Model(&model.Task{}).
+        Where("executor_id = ?", id).
+        Count(&taskCountExecutor).Error; err != nil {
+        return fmt.Errorf("failed to check tasks: %w", err)
+    }
+
+    if taskCountExecutor > 0 {
+        return errors.New("User has associated tasks: Executor")
+    }
+
+	
+    // Удаляем пользователя
+    result := s.db.WithContext(ctx).
+        Delete(&model.User{}, id)
+
+    if result.Error != nil {
+        return fmt.Errorf("failed to delete user: %w", result.Error)
+    }
+
+    if result.RowsAffected == 0 {
+        return gorm.ErrRecordNotFound
+    }
+
+    return nil
+
 }
