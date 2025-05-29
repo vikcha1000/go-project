@@ -18,32 +18,6 @@ type Task struct {
 	IsDone      bool      `gorm:"default:false" json:"is_done"`
 }
 
-// type TaskResponse struct {
-// 	ID          uint      `gorm:"primaryKey" json:"id"`
-// 	Name        string    `gorm:"size:255;not null" json:"name"`
-// 	Task        string    `gorm:"type:text;not null" json:"task" binding:"required"`
-// 	AuthorID    uint      `gorm:"not null" json:"-"`
-// 	Author      User      `gorm:"foreignKey:AuthorID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"author" binding:"required"`
-// 	ExecutorID  uint      `gorm:"not null" json:"-"`
-// 	Executor    User      `gorm:"foreignKey:ExecutorID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"executor" binding:"required"`
-// 	Deadline    time.Time `gorm:"not null" json:"deadline" binding:"required"`
-// 	CreatedAt   time.Time `gorm:"autoCreateTime" json:"createdAt"`
-// 	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"-"`
-// 	IsDone      bool      `gorm:"default:false" json:"isDone"`
-// }
-
-// type TaskRequest struct {
-// 	ID         uint      `gorm:"primaryKey;autoIncrement" json:"id"`
-// 	Name       string    `gorm:"size:255;not null" json:"name"`
-// 	Task       string    `gorm:"type:text;not null" json:"task" binding:"required"`
-// 	Author     string    `gorm:"size:255;not null" json:"author" binding:"required"`
-// 	Executor   string    `gorm:"size:255;not null" json:"executor" binding:"required"`
-// 	Deadline   time.Time `gorm:"not null" json:"deadline" binding:"required"`
-// 	CreatedAt  time.Time `gorm:"autoCreateTime" json:"createdAt"`
-// 	UpdatedAt  time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
-// 	IsDone     bool      `gorm:"default:false" json:"isDone"`
-// }
-
 // func UpdateUserByID(db *sqlx.DB, id string, updatedUser *User) (*User, error) {
 // 	query := `
 // 		UPDATE users
