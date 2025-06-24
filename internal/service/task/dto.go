@@ -1,23 +1,25 @@
 package task
 
 import (
-	"mine/internal/model"
+	"mine/internal/models"
 	"time"
 )
 
 // --- Request DTOs ---
 
 type CreateTaskRequest struct {
-	Name        string    `json:"name" validate:"required,min=3"`
-	Description string    `json:"description" validate:"max=500"`
+	Name        string    `json:"name" validate:"required,min=3,max=255"`
+	Description string    `json:"description" validate:"required,min=3,max=500"`
 	AuthorID    uint      `json:"authorId" validate:"required"`
 	ExecutorID  uint      `json:"executorId" validate:"required"`
 	Deadline    time.Time `json:"deadline" validate:"required"`
 }
 
 type UpdateTaskRequest struct {
-	Name        *string    `json:"name,omitempty" validate:"omitempty,min=3"`
-	Description *string    `json:"description,omitempty" validate:"omitempty,max=500"`
+	Name        *string    `json:"name,omitempty" validate:"min=3,max=255"`
+	Description *string    `json:"description,omitempty" validate:"min=3,max=500"`
+	AuthorID    *uint      `json:"authorId,omitempty"`
+	ExecutorID  *uint      `json:"executorId,omitempty"`
 	IsDone      *bool      `json:"isDone,omitempty"`
 	Deadline    *time.Time `json:"deadline,omitempty"`
 }
@@ -43,7 +45,7 @@ type TaskUserResponse struct {
 
 // --- Helpers ---
 
-func ToTaskResponse(t model.Task) TaskResponse {
+func ToTaskResponse(t models.Task) TaskResponse {
 	return TaskResponse{
 		ID:          t.ID,
 		Name:        t.Name,

@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
-	"mine/internal/model"
+	"mine/internal/models"
 	"mine/pkg/config"
 
 	"gorm.io/driver/postgres"
@@ -25,7 +25,7 @@ func InitDB() error {
 	// }
 
 	// Автомиграция
-	err = DB.AutoMigrate(&model.Task{}, &model.User{})
+	err = DB.AutoMigrate(&models.Task{}, &models.User{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}

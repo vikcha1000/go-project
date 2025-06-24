@@ -3,8 +3,9 @@ package user
 import (
 	"context"
 	"errors"
-	"mine/internal/model"
-"fmt"
+	"fmt"
+	"mine/internal/models"
+
 	"gorm.io/gorm"
 )
 
@@ -17,8 +18,8 @@ func NewUserService(db *gorm.DB) *UserService {
 }
 
 // createUser создает нового Юзера
-func (s *UserService) CreateUser(ctx context.Context, req CreateUserRequest) (*model.User, error) {
-	user := model.User{
+func (s *UserService) CreateUser(ctx context.Context, req CreateUserRequest) (*models.User, error) {
+	user := models.User{
 		Name:             req.Name,
 		TelegramUsername: req.TelegramUsername,
 	}
@@ -31,8 +32,8 @@ func (s *UserService) CreateUser(ctx context.Context, req CreateUserRequest) (*m
 }
 
 // Получение Юзера по ID
-func (s *UserService) GetUserByID(ctx context.Context, id uint) (*model.User, error) {
-	var user model.User
+func (s *UserService) GetUserByID(ctx context.Context, id uint) (*models.User, error) {
+	var user models.User
 	if err := s.db.WithContext(ctx).First(&user, id).Error; err != nil {
 		return nil, err
 	}
@@ -40,7 +41,7 @@ func (s *UserService) GetUserByID(ctx context.Context, id uint) (*model.User, er
 }
 
 // Обновление Юзера
-func (s *UserService) UpdateUserByID(ctx context.Context, id uint, req UpdateUserRequest) (*model.User, error) {
+func (s *UserService) UpdateUserByID(ctx context.Context, id uint, req UpdateUserRequest) (*models.User, error) {
 	updates := make(map[string]interface{})
 
 	if req.Name != nil {
@@ -55,7 +56,7 @@ func (s *UserService) UpdateUserByID(ctx context.Context, id uint, req UpdateUse
 	}
 
 	result := s.db.WithContext(ctx).
-		Model(&model.User{}).
+		Model(&models.User{}).
 		Where("id = ?", id).
 		Updates(updates)
 
@@ -66,7 +67,7 @@ func (s *UserService) UpdateUserByID(ctx context.Context, id uint, req UpdateUse
 		return nil, gorm.ErrRecordNotFound
 	}
 
-	var user model.User
+	var user models.User
 	if err := s.db.First(&user, id).Error; err != nil {
 		return nil, err
 	}
@@ -76,43 +77,42 @@ func (s *UserService) UpdateUserByID(ctx context.Context, id uint, req UpdateUse
 
 // Удаляет Юзера, если он не создал задачи или не назначен исполнителем
 func (s *UserService) DeleteUserByID(ctx context.Context, id uint) error {
- // Проверяем наличие связанных задач
-    var taskCountAuthor, taskCountExecutor int64
-    if err := s.db.WithContext(ctx).
-        Model(&model.Task{}).
-        Where("author_id = ?", id).
-        Count(&taskCountAuthor).Error; err != nil {
-        return fmt.Errorf("failed to check tasks: %w", err)
-    }
+	// Проверяем наличие связанных задач
+	var taskCountAuthor, taskCountExecutor int64
+	if err := s.db.WithContext(ctx).
+		Model(&models.Task{}).
+		Where("author_id = ?", id).
+		Count(&taskCountAuthor).Error; err != nil {
+		return fmt.Errorf("failed to check tasks: %w", err)
+	}
 
-    if taskCountAuthor > 0 {
-        return errors.New("User has associated tasks: Author")
-    }
+	if taskCountAuthor > 0 {
+		return errors.New("User has associated tasks: Author")
+	}
 
-        if err := s.db.WithContext(ctx).
-        Model(&model.Task{}).
-        Where("executor_id = ?", id).
-        Count(&taskCountExecutor).Error; err != nil {
-        return fmt.Errorf("failed to check tasks: %w", err)
-    }
+	if err := s.db.WithContext(ctx).
+		Model(&models.Task{}).
+		Where("executor_id = ?", id).
+		Count(&taskCountExecutor).Error; err != nil {
+		return fmt.Errorf("failed to check tasks: %w", err)
+	}
 
-    if taskCountExecutor > 0 {
-        return errors.New("User has associated tasks: Executor")
-    }
+	if taskCountExecutor > 0 {
+		return errors.New("User has associated tasks: Executor")
+	}
 
-	
-    // Удаляем пользователя
-    result := s.db.WithContext(ctx).
-        Delete(&model.User{}, id)
+	// Удаляем пользователя
+	result := s.db.WithContext(ctx).
+		Delete(&models.User{}, id)
 
-    if result.Error != nil {
-        return fmt.Errorf("failed to delete user: %w", result.Error)
-    }
+	if result.Error != nil {
+		return fmt.Errorf("failed to delete user: %w", result.Error)
+	}
 
-    if result.RowsAffected == 0 {
-        return gorm.ErrRecordNotFound
-    }
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
 
-    return nil
+	return nil
 
 }

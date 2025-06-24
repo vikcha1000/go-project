@@ -1,1 +1,3 @@
 .env
+__debug_*
+GO.txt
