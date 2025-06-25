@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"mine/internal/models"
 
 	"gorm.io/gorm"
@@ -59,6 +60,45 @@ func (s *TaskService) ValidateUsersExist(ctx context.Context, userID uint) error
 
 // Обновление задачи
 func (s *TaskService) UpdateTaskByID(ctx context.Context, id uint, req UpdateTaskRequest) (*models.Task, error) {
+	updates := make(map[string]interface{})
+
+	if req.Name != nil {
+		updates["name"] = *req.Name
+	}
+	if req.Description != nil {
+		updates["description"] = *req.Description
+	}
+	if req.AuthorID != nil {
+		updates["author_id"] = *req.AuthorID
+	}
+	if req.ExecutorID != nil {
+		updates["executor_id"] = *req.ExecutorID
+	}
+	if req.IsDone != nil {
+		updates["is_done"] = *req.IsDone
+	}
+	if req.Deadline != nil {
+		updates["deadline"] = *req.Deadline
+	}
+
+	if len(updates) == 0 {
+		return nil, errors.New("no fields to update")
+	}
+	result := s.db.WithContext(ctx).
+		Model(&models.Task{}).
+		Where("id = ?", id).
+		Updates(updates)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
 	var task models.Task
+	if err := s.db.WithContext(ctx).Preload("Author").Preload("Executor").First(&task, id).Error; err != nil {
+		return nil, err
+	}
 	return &task, nil
 }

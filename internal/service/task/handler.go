@@ -47,7 +47,7 @@ func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 	}
 
 	if err := h.service.ValidateUsersExist(c.Context(), req.ExecutorID); err != nil {
-		return errs.Error(c, errs.ErrexecutorNotExist, nil)
+		return errs.Error(c, errs.ErrExecutorNotExist, nil)
 	}
 
 	task, err := h.service.CreateTask(c.Context(), req)
@@ -79,33 +79,45 @@ func (h *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 
 // UpdateTaskByID обновляет и возвращает задачу по id
 func (h *TaskHandler) UpdateTaskByID(c *fiber.Ctx) error {
-	var req UpdateTaskRequest
-
-	if err := c.BodyParser(&req); err != nil {
-		return errs.Error(c, errs.ErrInvalidBody, nil)
-	}
-
 	id, err := c.ParamsInt("id")
 	if err != nil {
 		return errs.Error(c, errs.ErrInvalidID, nil)
 	}
-
-	task, err := h.service.UpdateTaskByID(c.Context(), uint(id), req)
-	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
-		return errs.Error(c, errs.ErrNotFound, nil)
+	var req UpdateTaskRequest
+	if err := c.BodyParser(&req); err != nil {
+		return errs.Error(c, errs.ErrInvalidBody, nil)
 	}
 
 	if err := h.validate.Struct(req); err != nil {
 		return errs.Error(c, errs.ErrInvalidBody, nil)
 	}
 
-	if err := h.service.ValidateUsersExist(c.Context(), req.AuthorID); err != nil {
-		return errs.Error(c, errs.ErrAuthorNotExist, nil)
+	if req.Name == nil && req.Description == nil && req.AuthorID == nil && req.ExecutorID == nil && req.IsDone == nil && req.Deadline == nil {
+		return errs.Error(c, errs.ErrInvalidBody, nil)
 	}
+	if req.AuthorID != nil {
+		if err := h.service.ValidateUsersExist(c.Context(), *req.AuthorID); err != nil {
+			return errs.Error(c, errs.ErrAuthorNotExist, nil)
+		}
+	}
+	if req.ExecutorID != nil {
+		if err := h.service.ValidateUsersExist(c.Context(), *req.ExecutorID); err != nil {
+			return errs.Error(c, errs.ErrExecutorNotExist, nil)
+		}
+	}
+	task, err := h.service.UpdateTaskByID(c.Context(), uint(id), req)
+	if err != nil {
+		switch {
 
-	// 	if err := h.service.ValidateUsersExist(c.Context(), req.ExecutorID); err != nil {
-	// 		return errs.Error(c, errs.ErrexecutorNotExist, nil)
-	// 	}
+		case errors.Is(err, gorm.ErrRecordNotFound):
+			return errs.Error(c, errs.ErrNotFound, nil)
+
+		case errors.Is(err, errors.New("no fields to update")):
+			return errs.Error(c, errs.ErrEmptyBody, nil)
+		default:
+			return errs.Error(c, errs.ErrInternal, nil)
+		}
+	}
 
 	return errs.Success(c, task, "")
 }
