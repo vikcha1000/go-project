@@ -52,9 +52,6 @@ func (s *TaskService) ValidateUsersExist(ctx context.Context, userID uint) error
 	if err := s.db.WithContext(ctx).First(&models.User{}, userID).Error; err != nil {
 		return err
 	}
-	if err := s.db.WithContext(ctx).First(&models.User{}, userID).Error; err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -101,4 +98,20 @@ func (s *TaskService) UpdateTaskByID(ctx context.Context, id uint, req UpdateTas
 		return nil, err
 	}
 	return &task, nil
+}
+
+// Получение задач по ExecutorID
+func (s *TaskService) GetTasksByExecutorID(ctx context.Context, executorID uint) ([]*models.Task, error) {
+	var tasks []*models.Task
+
+	err := s.db.WithContext(ctx).
+		Preload("Author").
+		Preload("Executor").
+		Where("executor_id = ?", executorID).
+		Find(&tasks).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return tasks, nil
 }

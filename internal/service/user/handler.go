@@ -36,7 +36,7 @@ func (h *UserHandler) SetupAPI(r fiber.Router) {
 // GetUserByID возвращает Юзера по ID
 func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || id <= 0 {
 		return errs.Error(c, errs.ErrInvalidID, nil)
 	}
 
@@ -45,6 +45,7 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errs.Error(c, errs.ErrNotFound, nil)
 		}
+		h.log.Error("Failed to get user", zap.Uint("id", uint(id)), zap.Error(err))
 		return errs.Error(c, errs.ErrInternal, nil)
 	}
 
@@ -64,6 +65,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 
 	user, err := h.service.CreateUser(c.Context(), req)
 	if err != nil {
+		h.log.Error("Failed to create user", zap.Error(err))
 		return errs.Error(c, errs.ErrInternal, nil)
 	}
 
@@ -73,7 +75,7 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 // UpdateUserByID обновляет и возвращает Юзера
 func (h *UserHandler) UpdateUserByID(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || id <= 0 {
 		return errs.Error(c, errs.ErrInvalidID, nil)
 	}
 
@@ -95,13 +97,12 @@ func (h *UserHandler) UpdateUserByID(c *fiber.Ctx) error {
 		switch {
 
 		case errors.Is(err, gorm.ErrRecordNotFound):
-			h.log.Warn("User not found", zap.Uint("id", uint(id)))
 			return errs.Error(c, errs.ErrNotFound, nil)
 
 		case errors.Is(err, errors.New("no fields to update")):
 			return errs.Error(c, errs.ErrEmptyBody, nil)
 		default:
-			h.log.Error("Failed to update user", zap.Error(err))
+			h.log.Error("Failed to update user", zap.Uint("id", uint(id)), zap.Error(err))
 			return errs.Error(c, errs.ErrInternal, nil)
 		}
 	}
@@ -111,8 +112,7 @@ func (h *UserHandler) UpdateUserByID(c *fiber.Ctx) error {
 // DeleteUserByID удаляет Юзера, если он не создал задачи или не назначен исполнителем
 func (h *UserHandler) DeleteUserByID(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-	if err != nil {
-		h.log.Warn("Invalid user ID format", zap.Error(err))
+	if err != nil || id <= 0 {
 		return errs.Error(c, errs.ErrInvalidID, nil)
 	}
 
@@ -121,27 +121,22 @@ func (h *UserHandler) DeleteUserByID(c *fiber.Ctx) error {
 		switch {
 
 		case errors.Is(err, gorm.ErrRecordNotFound):
-			h.log.Warn("User not found", zap.Uint("id", uint(id)))
 			return errs.Error(c, errs.ErrNotFound, nil)
 
 		case err.Error() == "User has associated tasks: Author":
-			h.log.Warn("User has associated tasks", zap.Uint("id", uint(id)))
-
 			var createdTasks int64
 			h.service.db.Model(&models.Task{}).Where("author_id = ?", id).Count(&createdTasks)
 
 			return errs.Error(c, errs.ErrUserIsAuthorTasks, nil)
 
 		case err.Error() == "User has associated tasks: Executor":
-			h.log.Warn("User has associated tasks", zap.Uint("id", uint(id)))
-
 			var assignedTasks int64
 			h.service.db.Model(&models.Task{}).Where("executor_id = ?", id).Count(&assignedTasks)
 
 			return errs.Error(c, errs.ErrUserIsExecutorTasks, nil)
 
 		default:
-			h.log.Error("Failed to delete user", zap.Error(err))
+			h.log.Error("Failed to delete user", zap.Uint("id", uint(id)), zap.Error(err))
 			return errs.Error(c, errs.ErrInternal, nil)
 		}
 

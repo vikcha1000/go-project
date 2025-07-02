@@ -4,6 +4,7 @@ package errs
 const (
 	ErrInvalidID           = "Некорректный формат ID"
 	ErrNotFound            = "Ресурс не найден"
+	ErrExecutorIdEmpty     = "Параметр executorId является обязательным"
 	ErrUserIsAuthorTasks   = "Не возможно удалить Юзера, который создал задачи"
 	ErrUserIsExecutorTasks = "Не возможно удалить Юзера, у которого есть назначенные задачи"
 	ErrEmptyBody           = "Нет полей для обновления"

@@ -25,10 +25,12 @@ func NewTaskHandler(service *TaskService, log *zap.Logger) *TaskHandler {
 }
 
 func (h *TaskHandler) SetupAPI(r fiber.Router) {
-	group := r.Group("/task")
-	group.Post("/", h.CreateTask)
-	group.Get("/:id", h.GetTaskByID)
-	group.Put("/:id", h.UpdateTaskByID)
+	groupTask := r.Group("/task")
+	groupTask.Post("/", h.CreateTask)
+	groupTask.Get("/:id", h.GetTaskByID)
+	groupTask.Put("/:id", h.UpdateTaskByID)
+	groupTasks := r.Group("/tasks")
+	groupTasks.Get("/", h.GetTasksByExecutorId)
 }
 
 // CreateTask создает и возвращает задачу
@@ -52,6 +54,7 @@ func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 
 	task, err := h.service.CreateTask(c.Context(), req)
 	if err != nil {
+		h.log.Error("Failed to create task", zap.Error(err))
 		return errs.Error(c, errs.ErrInternal, nil)
 	}
 
@@ -61,7 +64,7 @@ func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 // GetTaskByID возвращает задачу по id
 func (h *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || id <= 0 {
 		return errs.Error(c, errs.ErrInvalidID, nil)
 	}
 
@@ -71,6 +74,7 @@ func (h *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 	}
 
 	if err != nil {
+		h.log.Error("Failed to get task", zap.Uint("id", uint(id)), zap.Error(err))
 		return errs.Error(c, errs.ErrInternal, nil)
 	}
 
@@ -80,7 +84,7 @@ func (h *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 // UpdateTaskByID обновляет и возвращает задачу по id
 func (h *TaskHandler) UpdateTaskByID(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-	if err != nil {
+	if err != nil || id <= 0 {
 		return errs.Error(c, errs.ErrInvalidID, nil)
 	}
 	var req UpdateTaskRequest
@@ -115,9 +119,38 @@ func (h *TaskHandler) UpdateTaskByID(c *fiber.Ctx) error {
 		case errors.Is(err, errors.New("no fields to update")):
 			return errs.Error(c, errs.ErrEmptyBody, nil)
 		default:
+			h.log.Error("Failed to update task", zap.Uint("id", uint(id)), zap.Error(err))
 			return errs.Error(c, errs.ErrInternal, nil)
 		}
 	}
 
 	return errs.Success(c, task, "")
+}
+
+// GetTasksByExecutorId возвращает задачи по ExecutorId
+func (h *TaskHandler) GetTasksByExecutorId(c *fiber.Ctx) error {
+	executorIdStr := c.Query("executorId")
+	if executorIdStr == "" {
+		return errs.Error(c, errs.ErrExecutorIdEmpty, nil)
+	}
+	executorId := c.QueryInt("executorId")
+	if executorId == 0 || executorId <= 0 {
+		return errs.Error(c, errs.ErrInvalidID, nil)
+	}
+	tasks, err := h.service.GetTasksByExecutorID(c.Context(), uint(executorId))
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		return errs.Error(c, errs.ErrNotFound, nil)
+	}
+
+	if err := h.service.ValidateUsersExist(c.Context(), uint(executorId)); err != nil {
+		return errs.Error(c, errs.ErrExecutorNotExist, nil)
+	}
+
+	if err != nil {
+		h.log.Error("Failed to get tasks by executorId", zap.Uint("executorId", uint(executorId)), zap.Error(err))
+		return errs.Error(c, errs.ErrInternal, nil)
+	}
+
+	return errs.Success(c, tasks, "")
+
 }
