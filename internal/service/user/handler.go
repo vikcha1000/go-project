@@ -4,6 +4,7 @@ import (
 	"errors"
 	"mine/internal/models"
 	"mine/pkg/errs"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -65,6 +66,9 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 
 	user, err := h.service.CreateUser(c.Context(), req)
 	if err != nil {
+		if strings.Contains(err.Error(), "already exists") {
+			return errs.Error(c, errs.ErrTelegramUernameAlreadyExists, nil)
+		}
 		h.log.Error("Failed to create user", zap.Error(err))
 		return errs.Error(c, errs.ErrInternal, nil)
 	}
@@ -84,7 +88,7 @@ func (h *UserHandler) UpdateUserByID(c *fiber.Ctx) error {
 		return errs.Error(c, errs.ErrInvalidBody, nil)
 	}
 
-	if req.Name == nil && req.TelegramUsername == nil {
+	if req.Name == nil && req.TelegramUsername == nil && req.Password == nil {
 		return errs.Error(c, errs.ErrInvalidBody, nil)
 	}
 
@@ -101,6 +105,10 @@ func (h *UserHandler) UpdateUserByID(c *fiber.Ctx) error {
 
 		case errors.Is(err, errors.New("no fields to update")):
 			return errs.Error(c, errs.ErrEmptyBody, nil)
+
+		case strings.Contains(err.Error(), "already exists"):
+			return errs.Error(c, errs.ErrTelegramUernameAlreadyExists, nil)
+
 		default:
 			h.log.Error("Failed to update user", zap.Uint("id", uint(id)), zap.Error(err))
 			return errs.Error(c, errs.ErrInternal, nil)

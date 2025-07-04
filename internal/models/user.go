@@ -3,5 +3,7 @@ package models
 type User struct {
 	ID               uint   `gorm:"primaryKey" json:"id"`
 	Name             string `gorm:"size:255;not null" json:"name"`
-	TelegramUsername string `gorm:"size:255;not null" json:"telegramUsername"`
+	TelegramUsername string `gorm:"size:255;not null;uniqueIndex" json:"telegramUsername"`
+	PasswordHash     string `gorm:"size:255;not null" json:"-"`
+	Token            string `gorm:"-" json:"token"`
 }

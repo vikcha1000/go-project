@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"mine/internal/models"
 
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -19,9 +20,27 @@ func NewUserService(db *gorm.DB) *UserService {
 
 // createUser создает нового Юзера
 func (s *UserService) CreateUser(ctx context.Context, req CreateUserRequest) (*models.User, error) {
+	// Проверяем существование пользователя
+	var existingUser models.User
+	if err := s.db.WithContext(ctx).
+		Where("telegram_username = ?", req.TelegramUsername).
+		First(&existingUser).Error; err == nil {
+		return nil, fmt.Errorf("user with telegram username '%s' already exists", req.TelegramUsername)
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	// Хэшируем пароль
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Создаём пользователя
 	user := models.User{
 		Name:             req.Name,
 		TelegramUsername: req.TelegramUsername,
+		PasswordHash:     string(hashedPassword),
 	}
 
 	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
@@ -48,11 +67,27 @@ func (s *UserService) UpdateUserByID(ctx context.Context, id uint, req UpdateUse
 		updates["name"] = *req.Name
 	}
 	if req.TelegramUsername != nil {
+		var existingUser models.User
+		if err := s.db.WithContext(ctx).
+			Where("telegram_username = ?", req.TelegramUsername).
+			First(&existingUser).Error; err == nil {
+			return nil, fmt.Errorf("user with telegram username '%s' already exists", *req.TelegramUsername)
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
 		updates["telegram_username"] = *req.TelegramUsername
 	}
 
 	if len(updates) == 0 {
 		return nil, errors.New("no fields to update")
+	}
+
+	if req.Password != nil {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, fmt.Errorf("failed to hash password: %w", err)
+		}
+		updates["password_hash"] = hashedPassword
 	}
 
 	result := s.db.WithContext(ctx).

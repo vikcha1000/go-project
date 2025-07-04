@@ -11,9 +11,11 @@ type UserResponse struct {
 type CreateUserRequest struct {
 	Name             string `json:"name" validate:"required,min=3"`
 	TelegramUsername string `json:"telegramUsername" validate:"required,max=255"`
+	Password         string `json:"password" validate:"required,max=10,min=4"`
 }
 
 type UpdateUserRequest struct {
 	Name             *string `json:"name,omitempty" validate:"omitempty,min=3"`
 	TelegramUsername *string `json:"telegramUsername,omitempty" validate:"omitempty,max=255"`
+	Password         *string `json:"password,omitempty" validate:"omitempty,max=10,min=4"`
 }
