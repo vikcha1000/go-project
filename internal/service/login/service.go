@@ -14,14 +14,15 @@ type LoginService struct {
 	secret string
 }
 
-func NewLoginService(db *gorm.DB, secret string) *LoginService {
+func NewLoginService(db *gorm.DB) *LoginService {
 	return &LoginService{
-		db:     db,
-		secret: secret,
+		db: db,
 	}
 }
-func (s *LoginService) Login(ctx context.Context, req LoginRequest) (*models.User, error) {
+
+func (s *LoginService) Login(ctx context.Context, req LoginRequest) (*LoginResponse, error) {
 	var user models.User
+	var login LoginResponse
 	if err := s.db.WithContext(ctx).
 		Where("telegram_username = ?", req.TelegramUsername).
 		First(&user).Error; err != nil {
@@ -41,11 +42,14 @@ func (s *LoginService) Login(ctx context.Context, req LoginRequest) (*models.Use
 	}
 
 	// Генерируем JWT токен
-	token, err := generateJWTToken(user.ID, user.TelegramUsername, s.secret)
+	token, err := generateJWTToken(user.TelegramUsername, s.secret)
 	if err != nil {
 		return nil, err
 	}
 
-	user.Token = token
-	return &user, nil
+	login = LoginResponse{
+		TelegramUsername: req.TelegramUsername,
+		Token:            token,
+	}
+	return &login, nil
 }

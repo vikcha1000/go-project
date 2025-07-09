@@ -14,7 +14,7 @@ type LoginHandler struct {
 	log      *zap.Logger
 }
 
-func NewUserHandler(service *LoginService, log *zap.Logger) *LoginHandler {
+func NewLoginHandler(service *LoginService, log *zap.Logger) *LoginHandler {
 	return &LoginHandler{
 		service:  service,
 		validate: validator.New(),
@@ -23,8 +23,8 @@ func NewUserHandler(service *LoginService, log *zap.Logger) *LoginHandler {
 }
 
 func (h *LoginHandler) SetupAPI(r fiber.Router) {
-	user := r.Group("/login")
-	user.Post("/", h.Login)
+	login := r.Group("/login")
+	login.Post("/", h.Login)
 }
 
 // Login проверяет совпадение введенного пароля
@@ -39,10 +39,10 @@ func (h *LoginHandler) Login(c *fiber.Ctx) error {
 		return errs.Error(c, errs.ErrInvalidBody, nil)
 	}
 
-	user, err := h.service.Login(c.Context(), req)
+	login, err := h.service.Login(c.Context(), req)
 	if err != nil {
 		return errs.Error(c, errs.ErrInvalidCreditails, nil)
 	}
 
-	return errs.Success(c, user, "")
+	return errs.Success(c, login, "")
 }

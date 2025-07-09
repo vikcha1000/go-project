@@ -1,6 +1,7 @@
 package app
 
 import (
+	"mine/internal/service/login"
 	"mine/internal/service/task" // Пакет с TaskHandler
 	"mine/internal/service/user" // Пакет с UserHandler
 	"mine/pkg/database"          // Пакет с инициализацией БД
@@ -30,18 +31,17 @@ func Run() error {
 
 	// 3. Инициализация сервисов
 	taskService := task.NewTaskService(database.GetDB())
-    userService := user.NewUserService(database.GetDB())
+	userService := user.NewUserService(database.GetDB())
+	loginService := login.NewLoginService(database.GetDB())
 
 	// 4. Создание Fiber приложения
 	app := fiber.New()
-
-	// // Создаем роутер для API (префикс /api)
-	// apiRouter := app.Group("/api")
 
 	// 5. Инициализация обработчиков
 	handlers := []FeatureHandler{
 		task.NewTaskHandler(taskService, logger),
 		user.NewUserHandler(userService, logger),
+		login.NewLoginHandler(loginService, logger),
 	}
 
 	// 6. Настройка маршрутов
