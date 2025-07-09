@@ -115,3 +115,18 @@ func (s *TaskService) GetTasksByExecutorID(ctx context.Context, executorID uint)
 	}
 	return tasks, nil
 }
+
+// Получение задач по AuthorID
+func (s *TaskService) GetAuthorTasks(ctx context.Context, authorID uint) ([]*models.Task, error) {
+	var tasks []*models.Task
+	err := s.db.WithContext(ctx).
+		Preload("Author").
+		Preload("Executor").
+		Where("author_id = ?", authorID).
+		Find(&tasks).Error
+
+	if err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}

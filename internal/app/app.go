@@ -39,7 +39,7 @@ func Run() error {
 
 	// 5. Инициализация обработчиков
 	handlers := []FeatureHandler{
-		task.NewTaskHandler(taskService, logger),
+		task.NewTaskHandler(taskService, userService, logger),
 		user.NewUserHandler(userService, logger),
 		login.NewLoginHandler(loginService, logger),
 	}

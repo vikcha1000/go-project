@@ -151,3 +151,12 @@ func (s *UserService) DeleteUserByID(ctx context.Context, id uint) error {
 	return nil
 
 }
+
+// Получение ID Юзера по TelegramUserName
+func (s *UserService) GetUserByTelegramUserName(ctx context.Context, TelegramUserName string) (*models.User, error) {
+	var user models.User
+	if err := s.db.WithContext(ctx).First(&user, TelegramUserName).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}

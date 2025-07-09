@@ -2,6 +2,7 @@ package task
 
 import (
 	"errors"
+	"mine/internal/service/user"
 	"mine/pkg/errs"
 
 	"github.com/go-playground/validator/v10"
@@ -11,16 +12,18 @@ import (
 )
 
 type TaskHandler struct {
-	service  *TaskService
-	validate *validator.Validate
-	log      *zap.Logger
+	taskService *TaskService
+	userService *user.UserService
+	validate    *validator.Validate
+	log         *zap.Logger
 }
 
-func NewTaskHandler(service *TaskService, log *zap.Logger) *TaskHandler {
+func NewTaskHandler(taskService *TaskService, userService *user.UserService, log *zap.Logger) *TaskHandler {
 	return &TaskHandler{
-		service:  service,
-		validate: validator.New(),
-		log:      log,
+		taskService: taskService,
+		userService: userService,
+		validate:    validator.New(),
+		log:         log,
 	}
 }
 
@@ -31,6 +34,7 @@ func (h *TaskHandler) SetupAPI(r fiber.Router) {
 	groupTask.Put("/:id", h.UpdateTaskByID)
 	groupTasks := r.Group("/tasks")
 	groupTasks.Get("/", h.GetTasksByExecutorId)
+	groupTasks.Get("/author", h.GetAuthorTasks)
 }
 
 // CreateTask создает и возвращает задачу
@@ -44,15 +48,15 @@ func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 		return errs.Error(c, errs.ErrInvalidBody, nil)
 	}
 
-	if err := h.service.ValidateUsersExist(c.Context(), req.AuthorID); err != nil {
+	if err := h.taskService.ValidateUsersExist(c.Context(), req.AuthorID); err != nil {
 		return errs.Error(c, errs.ErrAuthorNotExist, nil)
 	}
 
-	if err := h.service.ValidateUsersExist(c.Context(), req.ExecutorID); err != nil {
+	if err := h.taskService.ValidateUsersExist(c.Context(), req.ExecutorID); err != nil {
 		return errs.Error(c, errs.ErrExecutorNotExist, nil)
 	}
 
-	task, err := h.service.CreateTask(c.Context(), req)
+	task, err := h.taskService.CreateTask(c.Context(), req)
 	if err != nil {
 		h.log.Error("Failed to create task", zap.Error(err))
 		return errs.Error(c, errs.ErrInternal, nil)
@@ -68,7 +72,7 @@ func (h *TaskHandler) GetTaskByID(c *fiber.Ctx) error {
 		return errs.Error(c, errs.ErrInvalidID, nil)
 	}
 
-	task, err := h.service.GetTaskByID(c.Context(), uint(id))
+	task, err := h.taskService.GetTaskByID(c.Context(), uint(id))
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		return errs.Error(c, errs.ErrNotFound, nil)
 	}
@@ -100,16 +104,16 @@ func (h *TaskHandler) UpdateTaskByID(c *fiber.Ctx) error {
 		return errs.Error(c, errs.ErrInvalidBody, nil)
 	}
 	if req.AuthorID != nil {
-		if err := h.service.ValidateUsersExist(c.Context(), *req.AuthorID); err != nil {
+		if err := h.taskService.ValidateUsersExist(c.Context(), *req.AuthorID); err != nil {
 			return errs.Error(c, errs.ErrAuthorNotExist, nil)
 		}
 	}
 	if req.ExecutorID != nil {
-		if err := h.service.ValidateUsersExist(c.Context(), *req.ExecutorID); err != nil {
+		if err := h.taskService.ValidateUsersExist(c.Context(), *req.ExecutorID); err != nil {
 			return errs.Error(c, errs.ErrExecutorNotExist, nil)
 		}
 	}
-	task, err := h.service.UpdateTaskByID(c.Context(), uint(id), req)
+	task, err := h.taskService.UpdateTaskByID(c.Context(), uint(id), req)
 	if err != nil {
 		switch {
 
@@ -137,17 +141,34 @@ func (h *TaskHandler) GetTasksByExecutorId(c *fiber.Ctx) error {
 	if executorId == 0 || executorId <= 0 {
 		return errs.Error(c, errs.ErrInvalidID, nil)
 	}
-	tasks, err := h.service.GetTasksByExecutorID(c.Context(), uint(executorId))
+	tasks, err := h.taskService.GetTasksByExecutorID(c.Context(), uint(executorId))
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		return errs.Error(c, errs.ErrNotFound, nil)
 	}
 
-	if err := h.service.ValidateUsersExist(c.Context(), uint(executorId)); err != nil {
+	if err := h.taskService.ValidateUsersExist(c.Context(), uint(executorId)); err != nil {
 		return errs.Error(c, errs.ErrExecutorNotExist, nil)
 	}
 
 	if err != nil {
 		h.log.Error("Failed to get tasks by executorId", zap.Uint("executorId", uint(executorId)), zap.Error(err))
+		return errs.Error(c, errs.ErrInternal, nil)
+	}
+
+	return errs.Success(c, tasks, "")
+
+}
+
+// GetAuthorTasks возвращает задачи по AuthorId автриизованного Юзера
+func (h *TaskHandler) GetAuthorTasks(c *fiber.Ctx) error {
+	// Получаем username из токена
+	telegramUsername := c.Locals("telegramUsername").(string)
+
+	user, err := h.userService.GetUserByTelegramUserName(c.Context(), telegramUsername)
+	//telegramUsername := c.Locals("telegramUsername").(string)
+	tasks, err := h.taskService.GetAuthorTasks(c.Context(), uint(user.ID))
+	if err != nil {
+		h.log.Error("Failed to get tasks", zap.Error(err))
 		return errs.Error(c, errs.ErrInternal, nil)
 	}
 
