@@ -2,6 +2,7 @@ package task
 
 import (
 	"errors"
+	"mine/internal/service/login"
 	"mine/internal/service/user"
 	"mine/pkg/errs"
 
@@ -16,23 +17,31 @@ type TaskHandler struct {
 	userService *user.UserService
 	validate    *validator.Validate
 	log         *zap.Logger
+	jwtSecret   string
 }
 
-func NewTaskHandler(taskService *TaskService, userService *user.UserService, log *zap.Logger) *TaskHandler {
+func NewTaskHandler(taskService *TaskService, userService *user.UserService, log *zap.Logger, jwtSecret string) *TaskHandler {
 	return &TaskHandler{
 		taskService: taskService,
 		userService: userService,
 		validate:    validator.New(),
 		log:         log,
+		jwtSecret:   jwtSecret,
 	}
 }
 
 func (h *TaskHandler) SetupAPI(r fiber.Router) {
+	// Используем сохраненный секрет
+	authMiddleware := login.AuthMiddleware(h.jwtSecret)
+
+	groupTasks := r.Group("/tasks")
+	groupTasks.Use(authMiddleware) // Применяем middleware
+	groupTasks.Get("/author", h.GetAuthorTasks)
+
 	groupTask := r.Group("/task")
 	groupTask.Post("/", h.CreateTask)
 	groupTask.Get("/:id", h.GetTaskByID)
 	groupTask.Put("/:id", h.UpdateTaskByID)
-	groupTasks := r.Group("/tasks")
 	groupTasks.Get("/", h.GetTasksByExecutorId)
 	groupTasks.Get("/author", h.GetAuthorTasks)
 }
@@ -162,16 +171,26 @@ func (h *TaskHandler) GetTasksByExecutorId(c *fiber.Ctx) error {
 // GetAuthorTasks возвращает задачи по AuthorId автриизованного Юзера
 func (h *TaskHandler) GetAuthorTasks(c *fiber.Ctx) error {
 	// Получаем username из токена
-	telegramUsername := c.Locals("telegramUsername").(string)
+	telegramUsername, ok := c.Locals("telegramUsername").(string)
+	if !ok {
+		h.log.Error("Telegram username not found in context")
+		h.log.Error(telegramUsername)
+		return errs.Error(c, errs.ErrAuthorNotExist, nil)
+	}
 
+	// Получаем пользователя
 	user, err := h.userService.GetUserByTelegramUserName(c.Context(), telegramUsername)
-	//telegramUsername := c.Locals("telegramUsername").(string)
-	tasks, err := h.taskService.GetAuthorTasks(c.Context(), uint(user.ID))
+	if err != nil {
+		h.log.Error("Failed to get user", zap.Error(err))
+		return errs.Error(c, errs.ErrAuthorNotExist, nil)
+	}
+
+	// Получаем задачи
+	tasks, err := h.taskService.GetAuthorTasks(c.Context(), user.ID)
 	if err != nil {
 		h.log.Error("Failed to get tasks", zap.Error(err))
 		return errs.Error(c, errs.ErrInternal, nil)
 	}
 
 	return errs.Success(c, tasks, "")
-
 }

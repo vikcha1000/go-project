@@ -77,17 +77,16 @@ func (s *UserService) UpdateUserByID(ctx context.Context, id uint, req UpdateUse
 		}
 		updates["telegram_username"] = *req.TelegramUsername
 	}
-
-	if len(updates) == 0 {
-		return nil, errors.New("no fields to update")
-	}
-
 	if req.Password != nil {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
 		if err != nil {
 			return nil, fmt.Errorf("failed to hash password: %w", err)
 		}
 		updates["password_hash"] = hashedPassword
+	}
+
+	if len(updates) == 0 {
+		return nil, errors.New("no fields to update")
 	}
 
 	result := s.db.WithContext(ctx).
@@ -153,9 +152,13 @@ func (s *UserService) DeleteUserByID(ctx context.Context, id uint) error {
 }
 
 // Получение ID Юзера по TelegramUserName
-func (s *UserService) GetUserByTelegramUserName(ctx context.Context, TelegramUserName string) (*models.User, error) {
+func (s *UserService) GetUserByTelegramUserName(ctx context.Context, telegramUserName string) (*models.User, error) {
 	var user models.User
-	if err := s.db.WithContext(ctx).First(&user, TelegramUserName).Error; err != nil {
+	err := s.db.WithContext(ctx).
+		Where("telegram_username = ?", telegramUserName).
+		First(&user).Error
+
+	if err != nil {
 		return nil, err
 	}
 	return &user, nil

@@ -14,9 +14,10 @@ type LoginService struct {
 	secret string
 }
 
-func NewLoginService(db *gorm.DB) *LoginService {
+func NewLoginService(db *gorm.DB, secret string) *LoginService { // Добавьте secret
 	return &LoginService{
-		db: db,
+		db:     db,
+		secret: secret,
 	}
 }
 
