@@ -2,6 +2,7 @@ package login
 
 import (
 	"fmt"
+	"mine/pkg/errs"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,6 +13,10 @@ func AuthMiddleware(secret string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 
+		if authHeader == "" {
+			return errs.Error(c, errs.ErrUnauthorized, nil)
+		}
+
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		fmt.Println("Token:", tokenString) // Логируем токен
 
@@ -19,11 +24,13 @@ func AuthMiddleware(secret string) fiber.Handler {
 			return []byte(secret), nil
 		})
 
-		if err != nil {
-			fmt.Println("Token parse error:", err) // Логируем ошибки парсинга
-			return c.Status(401).JSON("тест")
+		if strings.Contains(err.Error(), "token is expired") {
+			return errs.Error(c, errs.ErrTokenExpired, nil)
 		}
 
+		if !token.Valid {
+			return errs.Error(c, errs.ErrUnauthorized, nil)
+		}
 		claims := token.Claims.(jwt.MapClaims)
 
 		if username, ok := claims["telegramUsername"].(string); ok {

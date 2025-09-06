@@ -13,5 +13,7 @@ const (
 	ErrTelegramUernameAlreadyExists = "Юзер с таким TelegramUername уже существует"
 	ErrInvalidCreditails            = "Некоррекный логин или пароль"
 	ErrExecutorNotExist             = "Исполнитель - несуществующий юзер"
+	ErrTokenExpired                 = "Время жизни токена истекло"
+	ErrUnauthorized                 = "Ошибка авторизации"
 	ErrInternal                     = "Internal server error"
 )

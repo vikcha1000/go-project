@@ -25,6 +25,7 @@ func NewLoginHandler(service *LoginService, log *zap.Logger) *LoginHandler {
 func (h *LoginHandler) SetupAPI(r fiber.Router) {
 	login := r.Group("/login")
 	login.Post("/", h.Login)
+
 }
 
 // Login проверяет совпадение введенного пароля
