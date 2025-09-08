@@ -11,9 +11,11 @@ const (
 	ErrInvalidBody                  = "Некорректное тело запроса"
 	ErrAuthorNotExist               = "Автор - несуществующий юзер"
 	ErrTelegramUernameAlreadyExists = "Юзер с таким TelegramUername уже существует"
+	ErrTelegramUernameNotExists     = "Юзер с таким TelegramUername не существует"
 	ErrInvalidCreditails            = "Некоррекный логин или пароль"
 	ErrExecutorNotExist             = "Исполнитель - несуществующий юзер"
 	ErrTokenExpired                 = "Время жизни токена истекло"
 	ErrUnauthorized                 = "Ошибка авторизации"
+	ErrTelegramUernameInToken       = "Не удалось извлечь TelegramUername из токена"
 	ErrInternal                     = "Internal server error"
 )

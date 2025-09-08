@@ -31,7 +31,7 @@ func NewTaskHandler(taskService *TaskService, userService *user.UserService, log
 }
 
 func (h *TaskHandler) SetupAPI(r fiber.Router) {
-	// Используем сохраненный секрет
+
 	authMiddleware := login.AuthMiddleware(h.jwtSecret)
 
 	groupTasks := r.Group("/tasks")
@@ -168,21 +168,21 @@ func (h *TaskHandler) GetTasksByExecutorId(c *fiber.Ctx) error {
 
 }
 
-// GetAuthorTasks возвращает задачи по AuthorId автриизованного Юзера
+// GetAuthorTasks возвращает задачи по AuthorId авторизованного Юзера
 func (h *TaskHandler) GetAuthorTasks(c *fiber.Ctx) error {
 	// Получаем username из токена
 	telegramUsername, ok := c.Locals("telegramUsername").(string)
 	if !ok {
 		h.log.Error("Telegram username not found in context")
 		h.log.Error(telegramUsername)
-		return errs.Error(c, errs.ErrAuthorNotExist, nil)
+		return errs.Error(c, errs.ErrTelegramUernameInToken, nil)
 	}
 
 	// Получаем пользователя
 	user, err := h.userService.GetUserByTelegramUserName(c.Context(), telegramUsername)
 	if err != nil {
 		h.log.Error("Failed to get user", zap.Error(err))
-		return errs.Error(c, errs.ErrAuthorNotExist, nil)
+		return errs.Error(c, errs.ErrTelegramUernameNotExists, nil)
 	}
 
 	// Получаем задачи

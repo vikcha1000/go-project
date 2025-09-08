@@ -59,6 +59,15 @@ func (s *UserService) GetUserByID(ctx context.Context, id uint) (*models.User, e
 	return &user, nil
 }
 
+// // Получение Авторизованного Юзера
+// func (s *UserService) GetMyUser(ctx context.Context, id uint) (*models.User, error) {
+// 	var user models.User
+// 	if err := s.db.WithContext(ctx).First(&user, id).Error; err != nil {
+// 		return nil, err
+// 	}
+// 	return &user, nil
+// }
+
 // Обновление Юзера
 func (s *UserService) UpdateUserByID(ctx context.Context, id uint, req UpdateUserRequest) (*models.User, error) {
 	updates := make(map[string]interface{})
@@ -151,7 +160,7 @@ func (s *UserService) DeleteUserByID(ctx context.Context, id uint) error {
 
 }
 
-// Получение ID Юзера по TelegramUserName
+// Получение Юзера по TelegramUserName
 func (s *UserService) GetUserByTelegramUserName(ctx context.Context, telegramUserName string) (*models.User, error) {
 	var user models.User
 	err := s.db.WithContext(ctx).

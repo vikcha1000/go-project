@@ -11,6 +11,7 @@ import (
 
 func AuthMiddleware(secret string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		fmt.Println("AuthMiddleware called")
 		authHeader := c.Get("Authorization")
 
 		if authHeader == "" {
@@ -18,14 +19,24 @@ func AuthMiddleware(secret string) fiber.Handler {
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		fmt.Println("Token:", tokenString) // Логируем токен
+		fmt.Println("Token:", tokenString)
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return []byte(secret), nil
 		})
 
-		if strings.Contains(err.Error(), "token is expired") {
-			return errs.Error(c, errs.ErrTokenExpired, nil)
+		// if strings.Contains(err.Error(), "token is expired") {
+		// 	return errs.Error(c, errs.ErrTokenExpired, nil)
+		// }
+
+		if err != nil {
+			if strings.Contains(err.Error(), "token is expired") {
+				fmt.Println("Returning token expired error")
+				// Прямой возврат ошибки прерывает выполнение
+				return errs.Error(c, errs.ErrTokenExpired, nil)
+			}
+			// Прямой возврат ошибки прерывает выполнение
+			return errs.Error(c, errs.ErrUnauthorized, nil)
 		}
 
 		if !token.Valid {
@@ -38,6 +49,7 @@ func AuthMiddleware(secret string) fiber.Handler {
 			c.Locals("telegramUsername", username)
 		} else {
 			fmt.Println("telegramUsername not found in claims") // Логируем проблему
+			return errs.Error(c, errs.ErrTelegramUernameNotExists, nil)
 		}
 
 		return c.Next()

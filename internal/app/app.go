@@ -43,7 +43,7 @@ func Run() error {
 	// 5. Инициализация обработчиков
 	handlers := []FeatureHandler{
 		task.NewTaskHandler(taskService, userService, logger, jwtSecret),
-		user.NewUserHandler(userService, logger),
+		user.NewUserHandler(userService, logger, jwtSecret),
 		login.NewLoginHandler(loginService, logger),
 	}
 
@@ -52,6 +52,10 @@ func Run() error {
 	for _, handler := range handlers {
 		handler.SetupAPI(apiRouter)
 	}
+	// дебаг маршрут
+	app.Get("/debug/routes", func(c *fiber.Ctx) error {
+		return c.JSON(app.GetRoutes())
+	})
 
 	// 7. Запуск сервера
 	logger.Info("Starting server on :3000")

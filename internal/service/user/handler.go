@@ -2,7 +2,9 @@ package user
 
 import (
 	"errors"
+
 	"mine/internal/models"
+	"mine/internal/service/login"
 	"mine/pkg/errs"
 	"strings"
 
@@ -13,22 +15,25 @@ import (
 )
 
 type UserHandler struct {
-	service  *UserService
-	validate *validator.Validate
-	log      *zap.Logger
+	service   *UserService
+	validate  *validator.Validate
+	log       *zap.Logger
+	jwtSecret string
 }
 
-func NewUserHandler(service *UserService, log *zap.Logger) *UserHandler {
+func NewUserHandler(service *UserService, log *zap.Logger, jwtSecret string) *UserHandler {
 	return &UserHandler{
-		service:  service,
-		validate: validator.New(),
-		log:      log,
+		service:   service,
+		validate:  validator.New(),
+		log:       log,
+		jwtSecret: jwtSecret,
 	}
 }
 
 func (h *UserHandler) SetupAPI(r fiber.Router) {
 	user := r.Group("/user")
 	user.Post("/", h.CreateUser)
+	user.Get("/me", login.AuthMiddleware(h.jwtSecret), h.GetMyUser)
 	user.Get("/:id", h.GetUserByID)
 	user.Put("/:id", h.UpdateUserByID)
 	user.Delete("/:id", h.DeleteUserByID)
@@ -48,6 +53,26 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 		}
 		h.log.Error("Failed to get user", zap.Uint("id", uint(id)), zap.Error(err))
 		return errs.Error(c, errs.ErrInternal, nil)
+	}
+
+	return errs.Success(c, user, "")
+}
+
+// GetMyUser возвращает Юзера из под авторизации
+func (h *UserHandler) GetMyUser(c *fiber.Ctx) error {
+	// Получаем username из токена
+	telegramUsername, ok := c.Locals("telegramUsername").(string)
+	if !ok {
+		h.log.Error("Telegram username not found in context")
+		h.log.Error(telegramUsername)
+		return errs.Error(c, errs.ErrTelegramUernameInToken, nil)
+	}
+
+	// Получаем пользователя
+	user, err := h.service.GetUserByTelegramUserName(c.Context(), telegramUsername)
+	if err != nil {
+		h.log.Error("Failed to get user", zap.Error(err))
+		return errs.Error(c, errs.ErrTelegramUernameNotExists, nil)
 	}
 
 	return errs.Success(c, user, "")
