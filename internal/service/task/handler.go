@@ -31,19 +31,16 @@ func NewTaskHandler(taskService *TaskService, userService *user.UserService, log
 }
 
 func (h *TaskHandler) SetupAPI(r fiber.Router) {
-
 	authMiddleware := login.AuthMiddleware(h.jwtSecret)
-
 	groupTasks := r.Group("/tasks")
-	groupTasks.Use(authMiddleware) // Применяем middleware
-	groupTasks.Get("/author", h.GetAuthorTasks)
+	groupTasks.Get("/author", authMiddleware, h.GetAuthorTasks)
+	groupTasks.Get("/executor", authMiddleware, h.GetExecutorTasks)
+	groupTasks.Get("/", h.GetTasksByExecutorId)
 
 	groupTask := r.Group("/task")
 	groupTask.Post("/", h.CreateTask)
 	groupTask.Get("/:id", h.GetTaskByID)
 	groupTask.Put("/:id", h.UpdateTaskByID)
-	groupTasks.Get("/", h.GetTasksByExecutorId)
-	groupTasks.Get("/author", h.GetAuthorTasks)
 }
 
 // CreateTask создает и возвращает задачу
@@ -192,5 +189,31 @@ func (h *TaskHandler) GetAuthorTasks(c *fiber.Ctx) error {
 		return errs.Error(c, errs.ErrInternal, nil)
 	}
 
+	return errs.Success(c, tasks, "")
+}
+
+// GetExecutorTasks возвращает задачи по ExecutorId авторизованного Юзера
+func (h *TaskHandler) GetExecutorTasks(c *fiber.Ctx) error {
+	// Получаем username из токена
+	telegramUsername, ok := c.Locals("telegramUsername").(string)
+	if !ok {
+		h.log.Error("Telegram username not found in context")
+		h.log.Error(telegramUsername)
+		return errs.Error(c, errs.ErrTelegramUernameInToken, nil)
+	}
+
+	// Получаем пользователя
+	user, err := h.userService.GetUserByTelegramUserName(c.Context(), telegramUsername)
+	if err != nil {
+		h.log.Error("Failed to get user", zap.Error(err))
+		return errs.Error(c, errs.ErrTelegramUernameNotExists, nil)
+	}
+
+	// Получаем задачи
+	tasks, err := h.taskService.GetTasksByExecutorID(c.Context(), user.ID)
+	if err != nil {
+		h.log.Error("Failed to get tasks", zap.Error(err))
+		return errs.Error(c, errs.ErrInternal, nil)
+	}
 	return errs.Success(c, tasks, "")
 }
