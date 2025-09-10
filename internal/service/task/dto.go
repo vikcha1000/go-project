@@ -8,11 +8,11 @@ import (
 // --- Request DTOs ---
 
 type CreateTaskRequest struct {
-	Name        string    `json:"name" validate:"required,min=3,max=255"`
-	Description string    `json:"description" validate:"required,min=3,max=500"`
-	AuthorID    uint      `json:"authorId" validate:"required"`
-	ExecutorID  uint      `json:"executorId" validate:"required"`
-	Deadline    time.Time `json:"deadline" validate:"required"`
+	Name        string `json:"name" validate:"required,min=3,max=255"`
+	Description string `json:"description" validate:"required,min=3,max=500"`
+	//	AuthorID    uint      `json:"authorId" validate:"required"`
+	ExecutorID uint      `json:"executorId" validate:"required"`
+	Deadline   time.Time `json:"deadline" validate:"required"`
 }
 
 type UpdateTaskRequest struct {

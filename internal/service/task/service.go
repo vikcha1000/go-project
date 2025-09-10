@@ -17,11 +17,11 @@ func NewTaskService(db *gorm.DB) *TaskService {
 }
 
 // createTask создает новую задачу
-func (s *TaskService) CreateTask(ctx context.Context, req CreateTaskRequest) (*models.Task, error) {
+func (s *TaskService) CreateTask(ctx context.Context, req CreateTaskRequest, AuthorID uint) (*models.Task, error) {
 	task := models.Task{
 		Name:        req.Name,
 		Description: req.Description,
-		AuthorID:    req.AuthorID,
+		AuthorID:    AuthorID,
 		ExecutorID:  req.ExecutorID,
 		Deadline:    req.Deadline,
 		IsDone:      false,

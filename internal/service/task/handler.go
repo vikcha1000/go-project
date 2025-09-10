@@ -38,13 +38,29 @@ func (h *TaskHandler) SetupAPI(r fiber.Router) {
 	groupTasks.Get("/", h.GetTasksByExecutorId)
 
 	groupTask := r.Group("/task")
-	groupTask.Post("/", h.CreateTask)
+	groupTask.Post("/", authMiddleware, h.CreateTask)
 	groupTask.Get("/:id", h.GetTaskByID)
 	groupTask.Put("/:id", h.UpdateTaskByID)
 }
 
 // CreateTask создает и возвращает задачу
 func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
+
+	// Получаем username из токена
+	telegramUsername, ok := c.Locals("telegramUsername").(string)
+	if !ok {
+		h.log.Error("Telegram username not found in context")
+		h.log.Error(telegramUsername)
+		return errs.Error(c, errs.ErrTelegramUernameInToken, nil)
+	}
+
+	// Получаем пользователя
+	user, err := h.userService.GetUserByTelegramUserName(c.Context(), telegramUsername)
+	if err != nil {
+		h.log.Error("Failed to get user", zap.Error(err))
+		return errs.Error(c, errs.ErrTelegramUernameNotExists, nil)
+	}
+
 	var req CreateTaskRequest
 	if err := c.BodyParser(&req); err != nil {
 		return errs.Error(c, errs.ErrInvalidBody, nil)
@@ -54,7 +70,7 @@ func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 		return errs.Error(c, errs.ErrInvalidBody, nil)
 	}
 
-	if err := h.taskService.ValidateUsersExist(c.Context(), req.AuthorID); err != nil {
+	if err := h.taskService.ValidateUsersExist(c.Context(), user.ID); err != nil {
 		return errs.Error(c, errs.ErrAuthorNotExist, nil)
 	}
 
@@ -62,7 +78,7 @@ func (h *TaskHandler) CreateTask(c *fiber.Ctx) error {
 		return errs.Error(c, errs.ErrExecutorNotExist, nil)
 	}
 
-	task, err := h.taskService.CreateTask(c.Context(), req)
+	task, err := h.taskService.CreateTask(c.Context(), req, user.ID)
 	if err != nil {
 		h.log.Error("Failed to create task", zap.Error(err))
 		return errs.Error(c, errs.ErrInternal, nil)
